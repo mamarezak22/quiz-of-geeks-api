@@ -1,9 +1,11 @@
 from django.db import models
+import uuid
 
 from questions.models import Category, Question
 from users.models import User
 
 class Game(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user1 = models.ForeignKey(User, on_delete=models.SET_NULL)
     user2 = models.ForeignKey(User, on_delete=models.SET_NULL,null=True,blank = True)
     current_round = models.PositiveSmallIntegerField(default=0)
@@ -14,6 +16,7 @@ class Game(models.Model):
     last_turn_time = models.DateTimeField(default=None, null=True,blank = True)
     created_at = models.DateTimeField(auto_now_add=True)
     ended_at = models.DateTimeField(null=True)
+
 
     def __str__(self):
         return f'{self.user1} vs. {self.user2}'
