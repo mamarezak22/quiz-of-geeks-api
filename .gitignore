@@ -5,3 +5,5 @@ __pycache__/
 core/local_dev_settings.py
 core/settings.py
 core/secret.py
+db.sqlite3
+.env
