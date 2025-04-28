@@ -2,9 +2,6 @@ import random
 from django.db.models import QuerySet, Q
 from django.db import transaction
 from django.utils import timezone
-from datetime import timedelta
-from constants import MAX_LIMIT_GAMES,COUNT_OF_QUESTION_PER_ROUND
-from games.views import game_service
 from questions.models import Category,Question
 from users.models import User
 from games.models import Game,Round,QuestionRound
@@ -40,31 +37,29 @@ class GameService:
         # Check if the user has reached the limit
         count = GameService.count_of_available_games(user)
         print(count)
-        if GameService.count_of_available_games(user) >= MAX_LIMIT_GAMES:
-            print(f"User {user.username} has reached the maximum game limit.")
+        if GameService.count_of_available_games(user) >= 5:
             return None
 
         # Try to find an available game
         if game := GameService.get_available_game(user):
-            print(f"User {user.username} joined an existing game.")
             return game
 
         # If no available game, create a new one
         print(f"Creating a new game for {user.username}.")
-        game = Game.objects.create(user1=user)
+        game = Game.objects.create(user1=user,current_user_turn = user)
         return game
 
 
     @staticmethod
     def get_two_unused_categories_and_set_for_game(game)->QuerySet[Category]:
-        '''
+        """
         returns two unused category and set them for game.shown_categories too.
-        '''
+        """
         all_categories = Category.objects.all()
         shown_categories = game.shown_categories.all()
         not_shown_categories = [cat for cat in all_categories if cat not in shown_categories]
         two_random_category = random.sample(not_shown_categories,2)
-        game.add(*two_random_category)
+        game.shown_categories.add(*two_random_category)
         game.save()
         return two_random_category
 

@@ -43,6 +43,15 @@ class SelectCategoryView(APIView):
             return Response({"detail" : "the round started and can not select category for it now"},
                             status = 400)
 
+        #for the time that get for getting categories been called again.
+        if len(game.shown_categories.all()) > game.current_round * 2:
+            serializer = CategorySerializer(game.shown_categories.all().order_by('id')[:-2],many=True)
+            cache.set(key = game.pk,
+                      value = [cat.id for cat in serializer.data],
+                      timeout = 300)
+            return Response(serializer.data,
+                            status = 200)
+
         categories = game_service.get_two_unused_categories_and_set_for_game(game)
 
         cache.set(key = game.pk,
@@ -59,7 +68,8 @@ class SelectCategoryView(APIView):
         if not category_ids:
             return Response({"detail" : "categories been expired please get them again"},
                             status = 400)
-        selected_category_id = request.data.get("selected_category_id")
+        #because we want the integer type and not string type.
+        selected_category_id = int(request.data.get("selected_category_id"))
         if selected_category_id not in category_ids:
             return Response({"detail" : "invalid category_id"},
                             status = 400)
