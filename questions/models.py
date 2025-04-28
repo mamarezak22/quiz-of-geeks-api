@@ -1,5 +1,8 @@
 from django.db import models
 
+from questions.managers import QuestionManager
+
+
 class Category(models.Model):
     name = models.CharField(max_length=100)
     def __str__(self):
@@ -8,6 +11,8 @@ class Category(models.Model):
 class Question(models.Model):
     category = models.ForeignKey(Category, on_delete=models.CASCADE,related_name="questions")
     text = models.TextField()
+
+    objects = QuestionManager()
 
 class Answer(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE,related_name="answers")
