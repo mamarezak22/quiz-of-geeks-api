@@ -5,4 +5,5 @@ from rest_framework_simplejwt.views import TokenRefreshView,TokenObtainPairView
 urlpatterns = [
     path('admin/', admin.site.urls),
     path("",include("users.urls")),
+    path("",include("games.urls")),
 ]
