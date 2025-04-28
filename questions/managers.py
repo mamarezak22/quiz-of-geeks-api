@@ -1,5 +1,4 @@
-from games import models
-
+from django.db import models
 
 class QuestionManager(models.Manager):
     def for_category(self,category):

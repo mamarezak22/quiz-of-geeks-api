@@ -1,6 +1,6 @@
-from django.contrib.auth.models import UserManager
+from django.contrib.auth.models import BaseUserManager
 
-class UserManager(UserManager):
+class UserManager(BaseUserManager):
     def _create_user(self, phone_number, password, **extra_fields):
         user = self.model(phone_number=phone_number, **extra_fields)
         user.set_password(password)
@@ -10,4 +10,5 @@ class UserManager(UserManager):
         return self._create_user(phone_number, password, **extra_fields)
     def create_superuser(self, phone_number, password, **extra_fields):
         extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
         return self._create_user(phone_number, password, **extra_fields)
