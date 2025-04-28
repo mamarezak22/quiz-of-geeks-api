@@ -2,9 +2,10 @@ import pytest
 from django.urls import reverse
 from rest_framework.test import APIClient
 
+from games.views import game_service
 from questions.serializers import CategorySerializer
 from users.models import User
-from games.models import Game
+from games.models import Game,Round,QuestionRound
 from questions.models import Question,Category
 
 @pytest.fixture
@@ -17,7 +18,7 @@ def user2():
 
 
 @pytest.fixture
-def create_categories():
+def categories():
     names = [
         "هوش مصنوعی و علم داده",
         "بک اند",
@@ -32,6 +33,11 @@ def create_categories():
     ]
     categories = [Category.objects.create(name=name) for name in names]
     return categories
+
+@pytest.fixture
+def questions_and_answers_for_category(category:Category):
+    for i in range(3):
+
 
 @pytest.mark.django_db
 def test_create_a_game_when_there_is_no_available_game(user1):
@@ -80,7 +86,7 @@ def test_get_categories_for_first_round_if_user_not_its_turn(user1,user2):
     assert resp.status_code == 404
 
 @pytest.mark.django_db
-def test_get_categories_for_first_round_if_user_it_is_turn(user1,user2,create_categories):
+def test_get_categories_for_first_round_user_it_is_turn_of_user(user1, user2, categories):
     client = APIClient()
     game = Game.objects.create(user1 = user1,user2 = user2,current_user_turn = user1)
     client.force_authenticate(user = user1)
@@ -92,7 +98,7 @@ def test_get_categories_for_first_round_if_user_it_is_turn(user1,user2,create_ca
     assert all('id' in category and 'name' in category for category in data)
 
 @pytest.mark.django_db
-def test_set_category_for_first_round(user1,user2,create_categories):
+def test_set_category_for_first_round(user1, user2, categories):
     client = APIClient()
     game = Game.objects.create(user1=user1, user2=user2, current_user_turn=user1)
     client.force_authenticate(user=user1)
@@ -102,12 +108,27 @@ def test_set_category_for_first_round(user1,user2,create_categories):
     to_be_selected = data[0]["id"]
     select_category_url = reverse("select-category", kwargs={"game_id": game.pk})
     resp = client.post(select_category_url, data = {"selected_category_id":to_be_selected})
-    print(resp.json())
+    current_round = game_service.get_or_create_current_round(game)
     assert resp.status_code == 200
+    assert current_round.selected_category.pk == to_be_selected
 #
 # @pytest.mark.django_db
-# def test_answer_question_if_is_turn(user1,user2,create_categories):
-#     client = APIClient()
-#     game = Game.objects.create(user1 = user1,user2 = user2,current_user_turn = user1)
+# def test_get_question(user1, user2, categories,questions_for_category):
+#      client = APIClient()
+#      game = Game.objects.create(user1 = user1,user2 = user2,current_user_turn = user1,current_round = 1)
+#      round = Round.objects.create(game = game, selected_category = categories[0])
+#      questions = []
+#      for i in range(3):
+#          QuestionRound.objects.create(round = round,
+#                                       qusstion_number = i,
+#                                       question = question)
+#      current_question_round = game_service.get_current_question_round(round)
 #
+#      client.force_authenticate(user=user1)
+#      answer_question_url = reverse("answer-question",kwargs={"game_id": game.pk})
+#      resp = client.post(answer_question_url)
+#      assert resp.status_code == 200
 #
+
+
+

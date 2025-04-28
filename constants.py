@@ -1,1 +1,0 @@
-MAX_LIMIT_GAMES = 5

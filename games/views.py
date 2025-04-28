@@ -27,7 +27,7 @@ class StartGameView(APIView):
                         status = 400)
 
 class GameListView(APIView):
-    def post(self, request):
+    def get(self, request):
         games = game_service.find_all_available_games(request.user)
         serializer = GameSerializer(games, many=True)
         return Response(serializer.data,
@@ -76,6 +76,7 @@ class SelectCategoryView(APIView):
         selected_category_obj = Category.objects.get(pk=selected_category_id)
         current_round = game_service.get_or_create_current_round(game)
         current_round.selected_category = selected_category_obj
+        current_round.save()
         game_service.setup_questions_for_a_round(current_round)
         return Response({"detail" : f"category {selected_category_obj.name} been selected"},
                         status = 200)

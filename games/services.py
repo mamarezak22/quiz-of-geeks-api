@@ -71,6 +71,8 @@ class GameService:
     def get_or_create_current_round(game : Game)->Round:
         if game.current_round == 0:
             round = Round.objects.create(game = game,round_number = 1)
+            game.current_round = 1
+            game.save()
         else:
             round = Round.objects.get(game = game,round_number = game.current_round)
         return round
