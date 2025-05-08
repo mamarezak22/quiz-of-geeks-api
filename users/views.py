@@ -1,5 +1,6 @@
 import random
 import uuid
+from utils.validators import validate_phone_number
 from django.core.cache import cache
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -74,3 +75,8 @@ class GetMeView(APIView):
         serializer = RegisterSerializer(request.user)
         return Response(serializer.data,
                         status = 200)
+
+class ChangePhoneNumberView(APIView):
+    def post(self,request):
+        phone_number = request.data.get("phone_number")
+        validate_phone_number(phone_number)

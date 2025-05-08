@@ -96,7 +96,7 @@ class SelectCategoryView(APIView):
 #the problem that i find with that view is that when user calls get and dont call any post after time been passed we dont notify that 
 #time been passed so we need to do post call after every 20s of get calls eventually and this must be handled in front-end.
 
-class AnsewerQuestionView(APIView):
+class AnswerQuestionView(APIView):
     @validate_uuid_param("game_id")
     def get(self, request, game_id):
         game = game_service.get_open_game_if_its_user_turn_or_404(request.user, game_id)
