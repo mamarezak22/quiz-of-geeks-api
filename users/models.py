@@ -24,3 +24,10 @@ class User(AbstractBaseUser):
         return self.is_superuser
     def has_module_perms(self, app_label):
         return self.is_superuser
+
+class UserHistory(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    count_of_games = models.IntegerField(default=0)
+    count_of_loss_games = models.IntegerField(default=0)
+    count_of_won_games = models.IntegerField(default=0)
+    count_of_tie_games = models.IntegerField(default=0)

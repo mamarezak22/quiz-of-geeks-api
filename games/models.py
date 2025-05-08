@@ -1,6 +1,7 @@
 from django.db import models
 import uuid
 
+from .enums import Result
 from questions.models import Category, Question
 from users.models import User
 
@@ -8,7 +9,7 @@ class Game(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user1 = models.ForeignKey(User, on_delete=models.SET_NULL,null = True,blank = True,related_name="game_as_user_1")
     user2 = models.ForeignKey(User, on_delete=models.SET_NULL,null=True,blank = True,related_name="game_as_user_2")
-    current_round = models.PositiveSmallIntegerField(default=0)
+    current_round_number = models.PositiveSmallIntegerField(default=0)
     user1_point = models.PositiveSmallIntegerField(default=0)
     user2_point = models.PositiveSmallIntegerField(default=0)
     shown_categories = models.ManyToManyField(Category)
@@ -25,6 +26,7 @@ class Game(models.Model):
 
     def __str__(self):
         return f'{self.user1} vs. {self.user2}'
+
 
 class Round(models.Model):
     game = models.ForeignKey(Game, on_delete=models.CASCADE,related_name='rounds')

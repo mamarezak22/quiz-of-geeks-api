@@ -10,13 +10,14 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class AnswerSerializer(serializers.ModelSerializer):
     answer_text = serializers.CharField(source = "text")
+    id = serializers.IntegerField(read_only=True)
     class Meta:
         model = Answer
-        fields = ("answer_text",)
+        fields = ("id","answer_text")
 
 class QuestionSerializer(serializers.ModelSerializer):
-    question = serializers.CharField(source = "text")
-    answer = AnswerSerializer()
+    question_text = serializers.CharField(source = "text")
+    answers = AnswerSerializer(many = True)
     class Meta:
         model = Question
-        fields = ("question","answer")
+        fields = ("question_text","answers")
