@@ -6,7 +6,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
-from .serializers import CustomTokenObtainPairSerializer
+from .serializers import CustomTokenObtainPairSerializer, UserSerializer
 from users.services.send_code import send_code
 from .models import User
 from .serializers import RegisterSerializer
@@ -70,13 +70,19 @@ class RegisterUserView(APIView):
                 "access" : str(refresh.access_token),
             },status = 201)
 
-class GetMeView(APIView):
+class UserDetailView(APIView):
     def get(self,request):
-        serializer = RegisterSerializer(request.user)
-        return Response(serializer.data,
+        serializer = UserSerializer(request.user)
+        return Response(serializer.data , 
                         status = 200)
+    def patch(self,request):
+        serializer = UserSerializer(request.user,
+                                    data = request.data,
+                                    partial = True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"detail" : "user updated"},
+                            status = 200)
 
-class ChangePhoneNumberView(APIView):
-    def post(self,request):
-        phone_number = request.data.get("phone_number")
-        validate_phone_number(phone_number)
+        return Response(serializer.errors,
+                        status = 400)

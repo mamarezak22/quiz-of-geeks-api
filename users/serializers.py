@@ -13,6 +13,13 @@ class RegisterSerializer(ModelSerializer):
     def create(self, validated_data):
         return User.objects.create_user(**validated_data)
 
+class UserSerializer(ModelSerializer):
+    class Meta:
+        model = User
+        fields = ("username","password","phone_number")
+        read_only_fields = ["phone_number"]
+        extra_kwargs =  {"password": {"write_only": True}}
+
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user: AuthUser) -> Token:
