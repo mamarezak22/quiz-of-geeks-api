@@ -1,6 +1,5 @@
+Use a periodic task (e.g. Celery beat) to detect games stuck due to inactivity and end them or assign result
 - handle xp and level and history
 - history : correct question per category history and lose win draw history
--4. Clean-Up Inactive Games
 
-Use a periodic task (e.g. Celery beat) to detect games stuck due to inactivity and end them or assign result
 
