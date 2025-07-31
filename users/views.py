@@ -6,7 +6,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
-from .serializers import CustomTokenObtainPairSerializer, UserSerializer
+from .serializers import CustomTokenObtainPairSerializer, PasswordForgotSerialzier, PasswordForgotVerifySerialzier, UserSerializer
 from users.services.send_code import send_code
 from .models import User
 from .serializers import RegisterSerializer
@@ -86,3 +86,51 @@ class UserDetailView(APIView):
 
         return Response(serializer.errors,
                         status = 400)
+
+
+class PasswordForgotView(APIView):
+   def post(self,request):
+        serializer = PasswordForgotSerialzier(data = request.data)
+
+        if serializer.is_valid():
+            phone = serializer.data.get("phone_number")
+            rand_code = random.randint(100000,999999)
+            send_code.delay(phone,
+                            rand_code)
+            cache.set(phone,rand_code,timeout = 300)
+            return Response({"detail" : "code has been sended"},
+                            status = 200)
+        
+        return Response(serializer.errors,
+                        status = 400)
+
+
+class PasswordForgotVerifyView(APIView):
+    def post(self,request):
+        serializer = PasswordForgotVerifySerialzier(data = request.data)
+        
+        if serializer.is_valid():
+            phone = serializer.data.get("phone_number")
+            code = serializer.data.get("code")
+            cached_code = int(cache.get(phone))
+            if not cached_code:
+                return Response({"detail" : "code expired"},
+                                status = 400)
+
+            if cached_code != code :
+                return Response({"detail" : "code is wrong"},
+                                status = 400)
+            
+            #if cached_code == code (the user sends a right code)
+            new_password = serializer.data.get("new_password")
+            request.user.set_password(new_password) 
+            request.user.save()
+            return Response({"detail" : "password changed sucsessfully"},
+                            status = 200)
+
+                
+
+
+            
+            
+     

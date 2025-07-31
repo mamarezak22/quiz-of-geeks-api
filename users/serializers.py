@@ -26,3 +26,16 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token = super().get_token(user)
         token["phone_number"] = user.phone_number
         return token
+
+class PasswordForgotSerialzier(ModelSerializer):
+    class Meta:
+        model = User
+        fields = ("phone_number",)
+
+
+
+class PasswordForgotVerifySerialzier(ModelSerializer):
+    class Meta:
+        model = User
+        fields = ("phone_number","code","new_password")
+
