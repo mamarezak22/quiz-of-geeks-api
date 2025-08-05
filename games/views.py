@@ -14,6 +14,9 @@ game_service = GameService()
 
 
 class GameListView(APIView):
+    """
+        get all running games of user
+    """
     def get(self, request):
         games = game_service.get_all_open_games_for_user(request.user)
         serializer = GameSerializer(games, many=True)
@@ -93,22 +96,19 @@ class SelectCategoryView(APIView):
         return Response({"detail": f"category {selected_category_obj.name} been selected"},
                         status=200)
 
-#the problem that i find with that view is that when user calls get and dont call any post after time been passed we dont notify that 
-#time been passed so we need to do post call after every 20s of get calls eventually and this must be handled in front-end.
-
 class AnswerQuestionView(APIView):
     @validate_uuid_param("game_id")
     def get(self, request, game_id):
         game = game_service.get_open_game_if_its_user_turn_or_404(request.user, game_id)
         self.check_object_permissions(request, game)
 
-
-        #this method validate if user seen time for current question of game been setted or not .
-        #if setted means once this api called and user can not get question again.
         if game_service.not_selected_category_for_current_round(game):
             return Response({"detail" : "not yet seleted category for this round of game"},
                             status = 400)
 
+
+        #this method validate if user seen time for current question of game been setted or not .
+        #if setted means once this api called and user can not get question again.
         if game_service.question_getted_before_by_user(game,request.user):
             return Response({"detail" : "already getted question before"},
                             status = 400)
