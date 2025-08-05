@@ -1,19 +1,28 @@
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, AuthUser
 from rest_framework_simplejwt.tokens import Token
-from rest_framework.serializers import ModelSerializer
+from rest_framework import serializers
 
 from .models import User
 
-class RegisterSerializer(ModelSerializer):
+class GetCodeSerializer(serializers.Serializer):
+    phone_number = serializers.CharField(max_length = 12)
+
+class CheckCodeSerializer(serializers.Serializer):
+    phone_number =  serializers.CharField(max_length = 12) 
+    code = serializers.CharField(max_length = 6)
+
+class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ("username", "phone_number", "password",)
         extra_kwargs = {"password": {"write_only": True}}
 
+    #so when you said something like user.save()
+    #it triggers the createuser function.
     def create(self, validated_data):
         return User.objects.create_user(**validated_data)
 
-class UserSerializer(ModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ("username","password","phone_number")
@@ -26,16 +35,3 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token = super().get_token(user)
         token["phone_number"] = user.phone_number
         return token
-
-class PasswordForgotSerialzier(ModelSerializer):
-    class Meta:
-        model = User
-        fields = ("phone_number",)
-
-
-
-class PasswordForgotVerifySerialzier(ModelSerializer):
-    class Meta:
-        model = User
-        fields = ("phone_number","code","new_password")
-

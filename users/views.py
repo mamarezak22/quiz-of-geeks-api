@@ -1,69 +1,75 @@
 import random
-import uuid
+from users.service import is_phone_number_validated
 from utils.validators import validate_phone_number
 from django.core.cache import cache
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
-from .serializers import CustomTokenObtainPairSerializer, PasswordForgotSerialzier, PasswordForgotVerifySerialzier, UserSerializer
-from users.services.send_code import send_code
+from .serializers import CheckCodeSerializer, CustomTokenObtainPairSerializer, GetCodeSerializer, PasswordForgotSerialzier, PasswordForgotVerifySerialzier, UserSerializer
 from .models import User
 from .serializers import RegisterSerializer
 from utils.validators import validate_phone_number
+from .tasks import send_code
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
 
+
+
 class GetCodeView(APIView):
     permission_classes = (AllowAny,)
-    def post(self, request):
-        phone_number = request.data.get('phone_number')
-        validate_phone_number(phone_number)
-        if User.objects.filter(phone_number=phone_number).exists():
-            return Response({"detail" : "user already registered"},
-                            status = 400)
-        random_code = random.randint(100000, 999999)
-        send_code(phone_number,random_code)
-        cache.set(phone_number,str(random_code))
-        session_token = uuid.uuid4()
-        cache.set(session_token,phone_number,timeout = 600)
-        return Response({"session_token" : session_token},
-                        status= 200)
 
-class VerifyPhoneView(APIView):
+    def post(self, request):
+        serializer = GetCodeSerializer(data=request.data)
+        if serializer.is_valid():
+            phone = serializer.validated_data["phone_number"]
+            validate_phone_number(phone)
+
+            if User.objects.filter(phone_number=phone).exists():
+                return Response({"detail": "user already registered"}, status=400)
+
+            code = random.randint(100000,999999) 
+            #only 2minute for validating the code that been sented.
+            cache.set(phone, str(code), timeout=120)
+            send_code.delay(phone, code)
+
+            return Response({"detail": "code has been sent"}, status=200)
+        
+        return Response(serializer.errors,
+                        status = 400)
+
+
+class CheckCodeView(APIView):
     permission_classes = (AllowAny,)
     def post(self, request):
-        code = request.data.get('code')
-        session_token = request.data.get('session_token')
-        phone_number = cache.get(session_token)
-        if not phone_number:
-            return Response({"detail" : "session token not valid"},
-                            status = 400)
-        sended_code = cache.get(phone_number)
-        if sended_code != code:
-            return Response({"detail" : "code not valid"},
-                            status = 400)
-        cache.set(f"verified_{session_token}",phone_number,timeout = 600)
-        return Response({"detail" : "code valid"},
-                        status = 200)
+        serializer = CheckCodeSerializer(data = request.data) 
+
+        if serializer.is_valid():
+            code = serializer.validated_data["code"] 
+            phone_number = serializer.validated_data["phone_number"]
+
+            sended_code = cache.get(phone_number)
+            if sended_code != code:
+                return Response({"detail" : "code not valid"},
+                                status = 400)
+            cache.set(f"verified:{phone_number}", True, timeout=600)
+            return Response({"detail" : "code valid"},
+                            status = 200)
+        
+        return Response(serializer.errors,
+        status = 400)
 
 class RegisterUserView(APIView):
     permission_classes = (AllowAny,)
     def post(self, request):
-        session_token = request.data.get('session_token')
-        phone_number = cache.get(f"verified_{session_token}")
-        if not phone_number:
-            return Response({"detail" : "session token not valid"},
-                            status = 400)
-        serializer = RegisterSerializer(data = {"phone_number" : phone_number,
-                                        "username" : request.data.get('username'),
-                                         "password" : request.data.get('password')})
-
+        serializer = RegisterSerializer(data = request.data)
         if serializer.is_valid():
-            serializer.save()
-            cache.delete(f"verified_{session_token}")
-            user = User.objects.get(username = serializer.data['username'])
+            if not is_phone_number_validated(serializer.validated_data["phone_number"]) :
+                return Response({"detail" : "not validated yet"},
+                                status = 400)
+
+            user = serializer.save()
             refresh = CustomTokenObtainPairSerializer.get_token(user)
             return Response({
                 "refresh" : str(refresh),
@@ -90,14 +96,14 @@ class UserDetailView(APIView):
 
 class PasswordForgotView(APIView):
    def post(self,request):
-        serializer = PasswordForgotSerialzier(data = request.data)
+        serializer = GetCodeSerializer(data = request.data)
 
         if serializer.is_valid():
-            phone = serializer.data.get("phone_number")
+            phone = serializer.validated_data["phone_number"]
             rand_code = random.randint(100000,999999)
             send_code.delay(phone,
                             rand_code)
-            cache.set(phone,rand_code,timeout = 300)
+            cache.set(phone,rand_code,timeout = 120)
             return Response({"detail" : "code has been sended"},
                             status = 200)
         
@@ -107,11 +113,12 @@ class PasswordForgotView(APIView):
 
 class PasswordForgotVerifyView(APIView):
     def post(self,request):
-        serializer = PasswordForgotVerifySerialzier(data = request.data)
+        serializer = CheckCodeSerializer(data = request.data)
+        user = request.user
         
         if serializer.is_valid():
-            phone = serializer.data.get("phone_number")
-            code = serializer.data.get("code")
+            phone = serializer.validated_data["phone_number"]
+            code = serializer.validated_data["code"]
             cached_code = int(cache.get(phone))
             if not cached_code:
                 return Response({"detail" : "code expired"},
@@ -122,9 +129,9 @@ class PasswordForgotVerifyView(APIView):
                                 status = 400)
             
             #if cached_code == code (the user sends a right code)
-            new_password = serializer.data.get("new_password")
-            request.user.set_password(new_password) 
-            request.user.save()
+            new_password = serializer.validated_data["new_password"]
+            user.set_password(new_password)
+            user.save()
             return Response({"detail" : "password changed sucsessfully"},
                             status = 200)
 
