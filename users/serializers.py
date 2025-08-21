@@ -2,14 +2,23 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, Auth
 from rest_framework_simplejwt.tokens import Token
 from rest_framework import serializers
 
-from .models import User
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user: AuthUser) -> Token:
+        token = super().get_token(user)
+        token["phone_number"] = user.phone_number
+        return token
 
 class GetCodeSerializer(serializers.Serializer):
     phone_number = serializers.CharField(max_length = 12)
 
 class CheckCodeSerializer(serializers.Serializer):
     phone_number =  serializers.CharField(max_length = 12) 
-    code = serializers.CharField(max_length = 6)
+    code = serializers.IntegerField()
 
 class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
@@ -29,9 +38,7 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ["phone_number"]
         extra_kwargs =  {"password": {"write_only": True}}
 
-class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
-    @classmethod
-    def get_token(cls, user: AuthUser) -> Token:
-        token = super().get_token(user)
-        token["phone_number"] = user.phone_number
-        return token
+class ForgotPasswordSerializer(serializers.ModelSerializer):
+    phone_number = serializers.CharField(max_length = 12)
+    code = serializers.IntegerField(max_length = 6)
+    new_password = serializers.CharField()
