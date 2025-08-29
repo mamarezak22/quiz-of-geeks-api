@@ -38,7 +38,7 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ["phone_number"]
         extra_kwargs =  {"password": {"write_only": True}}
 
-class ForgotPasswordSerializer(serializers.ModelSerializer):
+class ChangePasswordSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField(max_length = 12)
     code = serializers.IntegerField(max_length = 6)
     new_password = serializers.CharField()

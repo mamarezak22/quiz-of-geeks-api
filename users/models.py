@@ -19,11 +19,6 @@ class User(AbstractBaseUser):
     def __str__(self):
         return self.username
 
-    #for acsessing to admin site by admin.
-    def has_perm(self, perm, obj=None):
-        return self.is_superuser
-    def has_module_perms(self, app_label):
-        return self.is_superuser
 
 class UserHistory(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
